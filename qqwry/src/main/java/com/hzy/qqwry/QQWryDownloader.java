@@ -5,22 +5,31 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.zip.InflaterInputStream;
 
 
-public class DatDownloadUtil {
+public class QQWryDownloader {
 
-    public static void downloadQQWryDat(String filePath) {
-        CopyWrite copyWrite = getCopyWrite();
-        if (copyWrite.getKey() != null) {
-            downloadDatWithKey(copyWrite.getKey(), filePath);
+    private static QQWryDownloader mInstance;
+
+    public static QQWryDownloader getInstance() {
+        if (mInstance == null) {
+            synchronized (QQWryDownloader.class) {
+                if (mInstance == null)
+                    mInstance = new QQWryDownloader();
+            }
         }
+        return mInstance;
     }
 
-    public static CopyWrite getCopyWrite() {
+    private CopyWrite mCopyWrite;
+
+    public void updateCopyWrite() {
         try {
             URL url = new URL("http://update.cz88.net/ip/copywrite.rar");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(10000);
             InputStream inputStream = connection.getInputStream();
             CopyWrite copyWrite = new CopyWrite();
             String string = readString(inputStream, 4);
@@ -55,12 +64,26 @@ public class DatDownloadUtil {
             if (string != null) {
                 copyWrite.setWebsite(string);
             }
-            return copyWrite;
+            mCopyWrite = copyWrite;
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
     }
+
+    public CopyWrite getCopyWrite() {
+        if (mCopyWrite == null) {
+            updateCopyWrite();
+        }
+        return mCopyWrite;
+    }
+
+    public void downloadQQWryDat(String filePath) {
+        CopyWrite copyWrite = getCopyWrite();
+        if (copyWrite.getKey() != null) {
+            downloadDatWithKey(copyWrite.getKey(), filePath);
+        }
+    }
+
 
     private static String readString(InputStream inputStream, int length) throws IOException {
         byte[] buffer = new byte[length];
@@ -78,7 +101,7 @@ public class DatDownloadUtil {
         return null;
     }
 
-    private static void downloadDatWithKey(int key, String filePath) {
+    private void downloadDatWithKey(int key, String filePath) {
         try {
             URL url = new URL("http://update.cz88.net/ip/qqwry.rar");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();

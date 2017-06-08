@@ -22,7 +22,7 @@ public class QQWryAnd {
      * @return QQwry版本信息
      */
     public String getVersion() {
-        return getStr(jniGetVersionBytes());
+        return decodeString(jniGetVersionBytes());
     }
 
     /**
@@ -32,7 +32,7 @@ public class QQWryAnd {
      * @return ip归属地信息
      */
     public String getIpAddr(String ip) {
-        return getStr(jniGetIpAddrBytes(ip));
+        return decodeString(jniGetIpAddrBytes(ip));
     }
 
     /**
@@ -42,7 +42,7 @@ public class QQWryAnd {
      * @return 该范围内的IP归属地相同
      */
     public String getIpRange(String ip) {
-        return getStr(jniGetIpRangeBytes(ip));
+        return decodeString(jniGetIpRangeBytes(ip));
     }
 
     /**
@@ -67,7 +67,7 @@ public class QQWryAnd {
      * @param array 输入
      * @return 字符串
      */
-    private String getStr(byte[] array) {
+    private String decodeString(byte[] array) {
         String str = "";
         try {
             str = new String(array, "GBK");
