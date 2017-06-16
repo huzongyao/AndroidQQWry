@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.zip.InflaterInputStream;
 
 
@@ -77,10 +76,14 @@ public class QQWryDownloader {
         return mCopyWrite;
     }
 
-    public void downloadQQWryDat(String filePath) {
+    public interface ProgressCallback {
+        void onProgress(int progress);
+    }
+
+    public void downloadQQWryDat(String filePath, ProgressCallback callback) {
         CopyWrite copyWrite = getCopyWrite();
         if (copyWrite.getKey() != null) {
-            downloadDatWithKey(copyWrite.getKey(), filePath);
+            downloadDatWithKey(copyWrite.getKey(), filePath, callback);
         }
     }
 
@@ -101,7 +104,7 @@ public class QQWryDownloader {
         return null;
     }
 
-    private void downloadDatWithKey(int key, String filePath) {
+    private void downloadDatWithKey(int key, String filePath, ProgressCallback callback) {
         try {
             URL url = new URL("http://update.cz88.net/ip/qqwry.rar");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -112,8 +115,15 @@ public class QQWryDownloader {
             FileOutputStream fileOutputStream = new FileOutputStream(filePath);
             byte[] buffer = new byte[1024 * 1024];
             int length;
+            int total = connection.getContentLength();
+            int already = 0;
             while ((length = inflaterInputStream.read(buffer)) > 0) {
                 fileOutputStream.write(buffer, 0, length);
+                if (callback != null) {
+                    already += length;
+                    int progress = already * 100 / total;
+                    callback.onProgress(progress);
+                }
             }
             fileOutputStream.close();
             inflaterInputStream.close();

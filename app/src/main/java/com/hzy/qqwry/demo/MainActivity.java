@@ -96,7 +96,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void downloadQQWryDat() {
-        progressDialog = ProgressDialog.show(this, "title", "processing...");
+        if (progressDialog == null) {
+            progressDialog = new ProgressDialog(this);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progressDialog.setCancelable(false);
+            progressDialog.setTitle("Preparing Data...");
+        }
+        progressDialog.show();
         Observable.create(new ObservableOnSubscribe<String>() {
             @Override
             public void subscribe(ObservableEmitter<String> e) throws Exception {
@@ -109,7 +115,13 @@ public class MainActivity extends AppCompatActivity {
                     localVersion = qqWryAnd.getVersion();
                 }
                 if (TextUtils.isEmpty(localVersion)) {
-                    QQWryDownloader.getInstance().downloadQQWryDat(localDatPath);
+                    QQWryDownloader.getInstance().downloadQQWryDat(localDatPath,
+                            new QQWryDownloader.ProgressCallback() {
+                                @Override
+                                public void onProgress(int progress) {
+                                    progressDialog.setProgress(progress);
+                                }
+                            });
                     if (qqWryAnd != null) {
                         qqWryAnd.close();
                     }
