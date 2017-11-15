@@ -18,7 +18,7 @@ IPLocator* ipLocator;
  */
 JNIEXPORT void JNICALL Java_com_hzy_qqwry_QQWryAnd_jniOpen
 		(JNIEnv *env, jobject, jstring path){
-	const char* cpath = (const char*)env->GetStringUTFChars(path, NULL);
+	const char* cpath = env->GetStringUTFChars(path, NULL);
 	LOGD("open file:[%s]", cpath);
 	ipLocator = new IPLocator(cpath);
 	env->ReleaseStringUTFChars(path, cpath);
@@ -74,8 +74,7 @@ JNIEXPORT jint JNICALL Java_com_hzy_qqwry_QQWryAnd_jniGetIpCount
  * Method:    jniClose
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_com_hzy_qqwry_QQWryAnd_jniClose
-		(JNIEnv *, jobject){
+JNIEXPORT void JNICALL Java_com_hzy_qqwry_QQWryAnd_jniClose(JNIEnv *, jobject){
 	LOGD("jniClose()");
 	delete ipLocator;
 	ipLocator = 0;
@@ -83,9 +82,9 @@ JNIEXPORT void JNICALL Java_com_hzy_qqwry_QQWryAnd_jniClose
 
 static jbyteArray string2jbyteArray(JNIEnv *env, string str){
 	const char* cstr = str.c_str();
-	LOGD("string2jbyteArray(),string len[%d]",strlen(cstr));
-	jbyteArray ret = env->NewByteArray(strlen(cstr));
-	env->SetByteArrayRegion(ret, 0, strlen(cstr), (jbyte*)cstr);
+	LOGD("string2jbyteArray(),string len[%ld]",strlen(cstr));
+	jbyteArray ret = env->NewByteArray((jsize) strlen(cstr));
+	env->SetByteArrayRegion(ret, 0, (jsize) strlen(cstr), (jbyte*)cstr);
 	return ret;
 }
 

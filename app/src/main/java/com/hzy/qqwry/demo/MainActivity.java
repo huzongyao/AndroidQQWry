@@ -67,7 +67,8 @@ public class MainActivity extends AppCompatActivity {
             public void subscribe(ObservableEmitter<String> e) throws Exception {
                 String result = "";
                 if (qqWryAnd != null) {
-                    result = qqWryAnd.getIpAddr(ipAddr);
+                    result = qqWryAnd.getIpAddr(ipAddr) + "\n"
+                            + qqWryAnd.getIpRange(ipAddr);
                 }
                 e.onNext(result);
             }

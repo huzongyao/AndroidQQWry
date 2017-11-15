@@ -25,18 +25,22 @@ distribution.
 #include <jni.h>
 #include <android/log.h>
 
-#define LOG_TAG "jniLog" // 这个是自定义的LOG的标识
-#undef LOG // 取消默认的LOG
+#define LOG_TAG "NATIVE.LOG"
 
-#ifdef DEBUG
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__) // 定义LOG类型
+#ifdef JNI_LOG
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#define LOGF(...) __android_log_print(ANDROID_LOG_FATAL,LOG_TAG,__VA_ARGS__)
 #else
 #define LOGD(...) do{}while(0)
+#define LOGI(...) do{}while(0)
+#define LOGW(...) do{}while(0)
+#define LOGE(...) do{}while(0)
+#define LOGF(...) do{}while(0)
 #endif
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__) // 定义LOG类型
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__) // 定义LOG类型
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__) // 定义LOG类型
-#define LOGF(...) __android_log_print(ANDROID_LOG_FATAL,LOG_TAG,__VA_ARGS__) // 定义LOG类型
+
 
 #ifndef _IP_LOCATOR_H_
 #define _IP_LOCATOR_H_
