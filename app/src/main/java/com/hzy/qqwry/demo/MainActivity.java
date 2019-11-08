@@ -1,13 +1,14 @@
 package com.hzy.qqwry.demo;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.hzy.qqwry.QQWryAnd;
 import com.hzy.qqwry.QQWryDownloader;
@@ -22,13 +23,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.Consumer;
-import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -39,105 +36,79 @@ public class MainActivity extends AppCompatActivity {
     private TextView textResult;
     private EditText editIpAddr;
     private Button buttonQuery;
+    private ExecutorService mThreadPool;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        localDatPath = getExternalFilesDir("qqwry").getAbsolutePath()
-                + File.separator + "qqwry.dat";
-        textDatInfo = (TextView) findViewById(R.id.text_qqwry_info);
-        editIpAddr = (EditText) findViewById(R.id.edit_input_ip);
-        buttonQuery = (Button) findViewById(R.id.button_query);
-        textResult = (TextView) findViewById(R.id.text_result_info);
+        mThreadPool = Executors.newFixedThreadPool(3);
+        localDatPath = getExternalFilesDir("qqwry")
+                .getAbsolutePath() + File.separator + "qqwry.dat";
+        textDatInfo = findViewById(R.id.text_qqwry_info);
+        editIpAddr = findViewById(R.id.edit_input_ip);
+        buttonQuery = findViewById(R.id.button_query);
+        textResult = findViewById(R.id.text_result_info);
         downloadQQWryDat();
         fillWithLocalIp();
-        buttonQuery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String ipAddr = editIpAddr.getText().toString();
-                queryIpAddr(ipAddr);
+        buttonQuery.setOnClickListener(v -> {
+            String ipAddr = editIpAddr.getText().toString();
+            queryIpAddress(ipAddr);
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        mThreadPool.shutdownNow();
+        super.onDestroy();
+    }
+
+    private void queryIpAddress(String ipAddr) {
+        mThreadPool.submit(() -> {
+            if (qqWryAnd != null) {
+                String result = qqWryAnd.getIpAddr(ipAddr) + "\n"
+                        + qqWryAnd.getIpRange(ipAddr);
+                runOnUiThread(() -> textResult.setText(result));
             }
         });
     }
 
-    private void queryIpAddr(final String ipAddr) {
-        Observable.create(new ObservableOnSubscribe<String>() {
-            @Override
-            public void subscribe(ObservableEmitter<String> e) throws Exception {
-                String result = "";
-                if (qqWryAnd != null) {
-                    result = qqWryAnd.getIpAddr(ipAddr) + "\n"
-                            + qqWryAnd.getIpRange(ipAddr);
-                }
-                e.onNext(result);
-            }
-        }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) throws Exception {
-                        textResult.setText(s);
-                    }
-                });
-    }
-
     private void fillWithLocalIp() {
-        Observable.create(new ObservableOnSubscribe<String>() {
-            @Override
-            public void subscribe(ObservableEmitter<String> e) throws Exception {
-                e.onNext(getLocalOriginIp());
-            }
-        }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
-                    @Override
-                    public void accept(String o) throws Exception {
-                        editIpAddr.setText(o);
-                    }
-                });
+        mThreadPool.submit(() -> {
+            String ip = getLocalOriginIp();
+            runOnUiThread(() -> editIpAddr.setText(ip));
+        });
     }
 
+    @SuppressLint("SetTextI18n")
     private void downloadQQWryDat() {
-        if (progressDialog == null) {
-            progressDialog = new ProgressDialog(this);
-            progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-            progressDialog.setCancelable(false);
-            progressDialog.setTitle("Preparing Data...");
-        }
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setCancelable(false);
+        progressDialog.setTitle("Preparing Data...");
         progressDialog.show();
-        Observable.create(new ObservableOnSubscribe<String>() {
-            @Override
-            public void subscribe(ObservableEmitter<String> e) throws Exception {
-                File localDat = new File(localDatPath);
-                String localVersion = "";
-                if (localDat.exists() && localDat.isFile()) {
-                    if (qqWryAnd == null) {
-                        qqWryAnd = new QQWryAnd(localDatPath);
-                    }
-                    localVersion = qqWryAnd.getVersion();
-                }
-                if (TextUtils.isEmpty(localVersion)) {
-                    QQWryDownloader.getInstance().downloadQQWryDat(localDatPath,
-                            new QQWryDownloader.ProgressCallback() {
-                                @Override
-                                public void onProgress(int progress) {
-                                    progressDialog.setProgress(progress);
-                                }
-                            });
-                    if (qqWryAnd != null) {
-                        qqWryAnd.close();
-                    }
+        mThreadPool.submit(() -> {
+            File localDat = new File(localDatPath);
+            String localVersion = "";
+            if (localDat.exists() && localDat.isFile()) {
+                if (qqWryAnd == null) {
                     qqWryAnd = new QQWryAnd(localDatPath);
                 }
-                e.onNext(qqWryAnd.getVersion() + "\nCount: " + qqWryAnd.getIpCount());
+                localVersion = qqWryAnd.getVersion();
             }
-        }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) throws Exception {
-                        progressDialog.dismiss();
-                        textDatInfo.setText(s);
-                    }
-                });
+            if (TextUtils.isEmpty(localVersion)) {
+                QQWryDownloader.getInstance().downloadQQWryDat(localDatPath,
+                        progress -> progressDialog.setProgress(progress));
+                if (qqWryAnd != null) {
+                    qqWryAnd.close();
+                }
+                qqWryAnd = new QQWryAnd(localDatPath);
+            }
+            runOnUiThread(() -> {
+                progressDialog.dismiss();
+                textDatInfo.setText(qqWryAnd.getVersion() + "\nCount: " + qqWryAnd.getIpCount());
+            });
+        });
     }
 
     private String getLocalOriginIp() {
